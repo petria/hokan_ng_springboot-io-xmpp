@@ -1,0 +1,122 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <name>hokan_ng_springboot-io-xmpp</name>
+    <artifactId>hokan_ng_springboot-io-xmpp</artifactId>
+    <version>0.0.1-final</version>
+    <packaging>jar</packaging>
+
+    <parent>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-parent</artifactId>
+        <version>1.5.3.RELEASE</version>
+        <relativePath/>
+    </parent>
+
+    <repositories>
+        <repository>
+            <id>hokannew</id>
+            <name>hokannew-releases</name>
+            <url>http://artifactory.airiot.fi/artifactory/libs-release-local</url>
+        </repository>
+    </repositories>
+
+    <scm>
+        <url>https://github.com/petria/hokan_ng_springboot-io-xmpp</url>
+        <connection>scm:git:git@github.com:petria/hokan_ng_springboot-io-xmpp.git</connection>
+        <developerConnection>scm:git:git@github.com:petria/hokan_ng_springboot-io-xmpp.git</developerConnection>
+    </scm>
+
+
+    <properties>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <maven.compiler.source>1.8</maven.compiler.source>
+        <maven.compiler.target>1.8</maven.compiler.target>
+        <java.version>1.8</java.version>
+
+        <start-class>org.freakz.hokan_ng_springboot.bot.io.xmpp.HokanNgSpringBootIoXMPP</start-class>
+
+        <java.version>1.8</java.version>
+        <jsoup.version>1.9.2</jsoup.version>
+        <logback.version>1.1.9</logback.version>
+        <lombok.version>1.16.12</lombok.version>
+    </properties>
+
+    <dependencies>
+
+        <dependency>
+            <groupId>org.jsoup</groupId>
+            <artifactId>jsoup</artifactId>
+            <version>${jsoup.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.freakz</groupId>
+            <artifactId>hokan_ng_springboot-common</artifactId>
+            <version>1.0.2-final</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.freakz</groupId>
+            <artifactId>hokan_ng_springboot-custom</artifactId>
+            <version>1.0.0-final</version>
+        </dependency>
+
+        <dependency>
+            <groupId>ch.qos.logback</groupId>
+            <artifactId>logback-classic</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <scope>provided</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>mysql</groupId>
+            <artifactId>mysql-connector-java</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-jms</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.activemq</groupId>
+            <artifactId>activemq-broker</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-jpa</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+    </dependencies>
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-maven-plugin</artifactId>
+                <configuration>
+                    <executable>true</executable>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+
+</project>

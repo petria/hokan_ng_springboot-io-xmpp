@@ -10,7 +10,10 @@ import org.jivesoftware.smack.XMPPConnection;
 import org.jivesoftware.smack.XMPPException;
 import org.jivesoftware.smack.filter.PacketTypeFilter;
 import org.jivesoftware.smack.packet.Message;
+import org.jivesoftware.smackx.muc.DiscussionHistory;
 import org.jivesoftware.smackx.muc.MultiUserChat;
+
+import java.util.Date;
 
 /**
  * @author pjn
@@ -51,7 +54,12 @@ public class Smacker {
             Roster roster = connection.getRoster();
 //            RoomInfo roomInfo = MultiUserChat.getRoomInfo(connection, "707396_robbottitesti@conf.hipchat.com");
             MultiUserChat multiUserChat = new MultiUserChat(connection, "707396_robbottitesti@conf.hipchat.com");
-            multiUserChat.join("Petri Airio");
+            DiscussionHistory discussionHistory = new DiscussionHistory();
+            discussionHistory.setMaxStanzas(0);
+            discussionHistory.setMaxChars(0);
+            discussionHistory.setSeconds(1);
+            discussionHistory.setSince(new Date());
+            multiUserChat.join("Petri Airio", null , discussionHistory, 10000L);
             PacketCollector packetCollector = null;
             packetCollector = connection.createPacketCollector(new PacketTypeFilter(Message.class));
             int foo = 0;

@@ -1,6 +1,5 @@
 package org.freakz.hokan_ng_springboot.bot.io.xmpp;
 
-import ch.qos.logback.classic.Level;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.activemq.ActiveMQConnectionFactory;
 import org.freakz.hokan_ng_springboot.bot.common.enums.CommandLineArgs;

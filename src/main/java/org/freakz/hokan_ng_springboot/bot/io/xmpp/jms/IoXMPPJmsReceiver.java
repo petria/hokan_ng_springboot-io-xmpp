@@ -2,11 +2,8 @@ package org.freakz.hokan_ng_springboot.bot.io.xmpp.jms;
 
 import lombok.extern.slf4j.Slf4j;
 import org.freakz.hokan_ng_springboot.bot.common.events.EngineResponse;
-import org.freakz.hokan_ng_springboot.bot.common.events.NotifyRequest;
 import org.freakz.hokan_ng_springboot.bot.common.jms.JmsEnvelope;
 import org.freakz.hokan_ng_springboot.bot.common.jms.SpringJmsReceiver;
-import org.freakz.hokan_ng_springboot.bot.common.service.ConnectionManagerService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 /**

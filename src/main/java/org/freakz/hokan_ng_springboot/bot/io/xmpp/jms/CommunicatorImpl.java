@@ -1,6 +1,7 @@
 package org.freakz.hokan_ng_springboot.bot.io.xmpp.jms;
 
 import lombok.extern.slf4j.Slf4j;
+import org.freakz.hokan_ng_springboot.bot.common.enums.HokanModule;
 import org.freakz.hokan_ng_springboot.bot.common.events.IrcMessageEvent;
 import org.freakz.hokan_ng_springboot.bot.common.events.ServiceRequest;
 import org.freakz.hokan_ng_springboot.bot.common.events.ServiceRequestType;
@@ -92,7 +93,7 @@ public class CommunicatorImpl implements EngineCommunicator, ServiceCommunicator
                         splitEvent.setMessage(trimmed);
                         if (trimmed.startsWith("!")) {
                             log.debug("Sending to engine: {}", trimmed);
-//                            jmsSender.send(HokanModule.HokanEngine.getQueueName(), "XMPP_EVENT", splitEvent, false);
+                            jmsSender.send(HokanModule.HokanIoXMPP, HokanModule.HokanEngine.getQueueName(), "EVENT", splitEvent, false);
                         } else {
                             log.debug("Not a command: {}", trimmed);
                         }
@@ -100,7 +101,7 @@ public class CommunicatorImpl implements EngineCommunicator, ServiceCommunicator
                 } else {
                     if (event.getMessage().startsWith("!")) {
                         log.debug("Sending to engine: {}", message);
-//                        jmsSender.send(HokanModule.HokanEngine.getQueueName(), "XMPP_EVENT", event, false);
+                        jmsSender.send(HokanModule.HokanIoXMPP, HokanModule.HokanEngine.getQueueName(), "EVENT", event, false);
                     } else {
                         log.debug("Not a command: {}", message);
                     }

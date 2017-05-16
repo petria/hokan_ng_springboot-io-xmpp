@@ -4,6 +4,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.freakz.hokan_ng_springboot.bot.common.events.EngineResponse;
 import org.freakz.hokan_ng_springboot.bot.common.jms.JmsEnvelope;
 import org.freakz.hokan_ng_springboot.bot.common.jms.SpringJmsReceiver;
+import org.freakz.hokan_ng_springboot.bot.io.xmpp.service.XmppConnectService;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 /**
@@ -16,6 +18,8 @@ public class IoXMPPJmsReceiver extends SpringJmsReceiver {
 
 //    private final ConnectionManagerService connectionManagerService;
 
+    @Autowired
+    private XmppConnectService xmppConnectService;
 
     @Override
     public String getDestinationName() {
@@ -32,6 +36,7 @@ public class IoXMPPJmsReceiver extends SpringJmsReceiver {
 
     private void handleEngineReply(JmsEnvelope envelope) {
         EngineResponse response = (EngineResponse) envelope.getMessageIn().getPayLoadObject("ENGINE_RESPONSE");
+        xmppConnectService.handleEngineResponse(response);
 //        connectionManagerService.handleEngineResponse(response);
     }
 

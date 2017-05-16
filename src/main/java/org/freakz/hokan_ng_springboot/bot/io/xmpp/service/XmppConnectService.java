@@ -1,6 +1,7 @@
 package org.freakz.hokan_ng_springboot.bot.io.xmpp.service;
 
 import lombok.extern.slf4j.Slf4j;
+import org.freakz.hokan_ng_springboot.bot.common.events.EngineResponse;
 import org.freakz.hokan_ng_springboot.bot.common.events.IrcEvent;
 import org.freakz.hokan_ng_springboot.bot.common.events.IrcMessageEvent;
 import org.freakz.hokan_ng_springboot.bot.common.jpa.entity.Channel;
@@ -17,11 +18,9 @@ import org.freakz.hokan_ng_springboot.bot.common.jpa.service.UserChannelService;
 import org.freakz.hokan_ng_springboot.bot.common.jpa.service.UserService;
 import org.freakz.hokan_ng_springboot.bot.common.util.StringStuff;
 import org.freakz.hokan_ng_springboot.bot.io.xmpp.jms.EngineCommunicator;
-import org.jivesoftware.smack.ChatManager;
 import org.jivesoftware.smack.Connection;
 import org.jivesoftware.smack.ConnectionConfiguration;
 import org.jivesoftware.smack.PacketCollector;
-import org.jivesoftware.smack.Roster;
 import org.jivesoftware.smack.SmackConfiguration;
 import org.jivesoftware.smack.XMPPConnection;
 import org.jivesoftware.smack.XMPPException;
@@ -66,6 +65,10 @@ public class XmppConnectService implements CommandLineRunner {
 
     @Autowired
     private UserService userService;
+
+    private Connection connection;
+
+    private MultiUserChat multiUserChat;
 
     public Network getNetwork() {
         Network network = networkService.getNetwork(NETWORK_NAME);
@@ -138,7 +141,7 @@ public class XmppConnectService implements CommandLineRunner {
 
             //ConnectionConfiguration config = new ConnectionConfiguration("talk.google.com", 5222, "gmail.com");
             ConnectionConfiguration config = new ConnectionConfiguration(server, port);
-            Connection connection = new XMPPConnection(config);
+            connection = new XMPPConnection(config);
             System.out.println("Connecting to : " + connection.getHost() + ":" + connection.getPort());
             // Connect to the server
             connection.connect();
@@ -152,10 +155,8 @@ public class XmppConnectService implements CommandLineRunner {
             String receiver = "707396_bottest";
             connection.login(username, password);
 
-            ChatManager cm = connection.getChatManager();
-            Roster roster = connection.getRoster();
 //            RoomInfo roomInfo = MultiUserChat.getRoomInfo(connection, "707396_robbottitesti@conf.hipchat.com");
-            MultiUserChat multiUserChat = new MultiUserChat(connection, "707396_robbottitesti@conf.hipchat.com");
+            multiUserChat = new MultiUserChat(connection, "707396_robbottitesti@conf.hipchat.com");
             DiscussionHistory discussionHistory = new DiscussionHistory();
             discussionHistory.setMaxStanzas(0);
             discussionHistory.setMaxChars(0);
@@ -169,6 +170,9 @@ public class XmppConnectService implements CommandLineRunner {
 
             while (true) {
                 Message m = (Message) packetCollector.nextResult();
+                if (m == null) {
+                    continue;
+                }
                 //(String botNick, String network, String channel, String sender, String login, String hostname, String message)
                 String sender = m.getFrom();
                 String message = m.getBody();
@@ -214,5 +218,11 @@ public class XmppConnectService implements CommandLineRunner {
 //        Thread t = new Thread(this::connect);
 //        t.start();
         connect();
+    }
+
+    public void handleEngineResponse(EngineResponse response) {
+        Message m = new Message(multiUserChat.getRoom(), Message.Type.groupchat);
+        m.setBody(response.getResponseMessage());
+        connection.sendPacket(m);
     }
 }

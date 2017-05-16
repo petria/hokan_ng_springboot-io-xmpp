@@ -146,36 +146,37 @@ public class XmppConnectService implements CommandLineRunner {
             // Connect to the server
             connection.connect();
             // Most servers require you to login before performing other tasks.
-//            String username = "707396_4968751@chat.hipchat.com";
-//            String password = "poiASD098?!?";
-            String username = "707396_4968738@chat.hipchat.com";
-            String password = "iFdCEHnBpJ6cBc";
+            String username = "707396_4968751@chat.hipchat.com";
+            String password = "poiASD098?!?";
+//            String username = "707396_4968738@chat.hipchat.com";
+//            String password = "iFdCEHnBpJ6cBc";
 
-            // will receive the message sent.
-            String receiver = "707396_bottest";
             connection.login(username, password);
 
-//            RoomInfo roomInfo = MultiUserChat.getRoomInfo(connection, "707396_robbottitesti@conf.hipchat.com");
+
             multiUserChat = new MultiUserChat(connection, "707396_robbottitesti@conf.hipchat.com");
             DiscussionHistory discussionHistory = new DiscussionHistory();
             discussionHistory.setMaxStanzas(0);
             discussionHistory.setMaxChars(0);
             discussionHistory.setSeconds(1);
             discussionHistory.setSince(new Date());
-            multiUserChat.join("Petri Airio", null, discussionHistory, 10000L);
+            String myNick = "Hokan TheBot";
+            multiUserChat.join(myNick, null, discussionHistory, 10000L);
             PacketCollector packetCollector = null;
             packetCollector = connection.createPacketCollector(new PacketTypeFilter(Message.class));
             int foo = 0;
-
-
             while (true) {
                 Message m = (Message) packetCollector.nextResult();
-                if (m == null) {
+                String message = m.getBody();
+                if (m == null || message == null) {
                     continue;
                 }
                 //(String botNick, String network, String channel, String sender, String login, String hostname, String message)
                 String sender = m.getFrom();
-                String message = m.getBody();
+                log.debug("sender: {}", sender);
+                if (sender.endsWith(myNick)) {
+                    continue;
+                }
                 IrcLog ircLog = this.ircLogService.addIrcLog(new Date(), sender, CHANNEL_NAME, message);
 
                 Network nw = getNetwork();

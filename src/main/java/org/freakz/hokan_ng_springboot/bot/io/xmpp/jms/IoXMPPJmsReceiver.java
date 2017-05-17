@@ -1,6 +1,7 @@
 package org.freakz.hokan_ng_springboot.bot.io.xmpp.jms;
 
 import lombok.extern.slf4j.Slf4j;
+import org.freakz.hokan_ng_springboot.bot.common.enums.HokanModule;
 import org.freakz.hokan_ng_springboot.bot.common.events.EngineResponse;
 import org.freakz.hokan_ng_springboot.bot.common.jms.JmsEnvelope;
 import org.freakz.hokan_ng_springboot.bot.common.jms.SpringJmsReceiver;
@@ -23,7 +24,7 @@ public class IoXMPPJmsReceiver extends SpringJmsReceiver {
 
     @Override
     public String getDestinationName() {
-        return "HokanNGIoXMPPQueue";
+        return HokanModule.HokanIoXMPP.getQueueName();
     }
 
     @Override

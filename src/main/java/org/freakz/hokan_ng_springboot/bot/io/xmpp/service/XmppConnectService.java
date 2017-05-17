@@ -17,6 +17,7 @@ import org.freakz.hokan_ng_springboot.bot.common.jpa.service.NetworkService;
 import org.freakz.hokan_ng_springboot.bot.common.jpa.service.UserChannelService;
 import org.freakz.hokan_ng_springboot.bot.common.jpa.service.UserService;
 import org.freakz.hokan_ng_springboot.bot.common.util.StringStuff;
+import org.freakz.hokan_ng_springboot.bot.io.xmpp.config.XmppConfiguration;
 import org.freakz.hokan_ng_springboot.bot.io.xmpp.jms.EngineCommunicator;
 import org.jivesoftware.smack.Connection;
 import org.jivesoftware.smack.ConnectionConfiguration;
@@ -65,6 +66,9 @@ public class XmppConnectService implements CommandLineRunner {
 
     @Autowired
     private UserService userService;
+
+    @Autowired
+    private XmppConfiguration configuration;
 
     private Connection connection;
 
@@ -132,26 +136,26 @@ public class XmppConnectService implements CommandLineRunner {
 
         SmackConfiguration.setLocalSocks5ProxyEnabled(false);
 
-        System.out.println("Starting session...");
+        log.debug("Starting session...");
         try {
             // Create a connection to the igniterealtime.org XMPP server.
-            String server = "chat.hipchat.com";
-            int port = 5222;
+//            String server = "chat.hipchat.com";
+//            int port = 5222;
 
 
             //ConnectionConfiguration config = new ConnectionConfiguration("talk.google.com", 5222, "gmail.com");
-            ConnectionConfiguration config = new ConnectionConfiguration(server, port);
+            ConnectionConfiguration config = new ConnectionConfiguration(configuration.getXmppServer(), configuration.getXmppPort());
             connection = new XMPPConnection(config);
-            System.out.println("Connecting to : " + connection.getHost() + ":" + connection.getPort());
+            log.debug("Connecting to : " + connection.getHost() + ":" + connection.getPort());
             // Connect to the server
             connection.connect();
             // Most servers require you to login before performing other tasks.
-            String username = "707396_4968751@chat.hipchat.com";
-            String password = "poiASD098?!?";
+//            String login = "707396_4968751@chat.hipchat.com";
+//            String password = "poiASD098?!?";
 //            String username = "707396_4968738@chat.hipchat.com";
 //            String password = "iFdCEHnBpJ6cBc";
 
-            connection.login(username, password);
+            connection.login(configuration.getXmppLogin(), configuration.getXmppPassword());
 
 
             multiUserChat = new MultiUserChat(connection, "707396_robbottitesti@conf.hipchat.com");
@@ -160,8 +164,8 @@ public class XmppConnectService implements CommandLineRunner {
             discussionHistory.setMaxChars(0);
             discussionHistory.setSeconds(1);
             discussionHistory.setSince(new Date());
-            String myNick = "Hokan TheBot";
-            multiUserChat.join(myNick, null, discussionHistory, 10000L);
+            String username = configuration.getXmppUsername();
+            multiUserChat.join(username, null, discussionHistory, 10000L);
             PacketCollector packetCollector = null;
             packetCollector = connection.createPacketCollector(new PacketTypeFilter(Message.class));
             int foo = 0;
@@ -174,7 +178,7 @@ public class XmppConnectService implements CommandLineRunner {
                 //(String botNick, String network, String channel, String sender, String login, String hostname, String message)
                 String sender = m.getFrom();
                 log.debug("sender: {}", sender);
-                if (sender.endsWith(myNick)) {
+                if (sender.endsWith(username)) {
                     continue;
                 }
                 IrcLog ircLog = this.ircLogService.addIrcLog(new Date(), sender, CHANNEL_NAME, message);
@@ -199,7 +203,7 @@ public class XmppConnectService implements CommandLineRunner {
 
                 engineCommunicator.sendToEngine(ircEvent, null);
 
-                System.out.println(m.getFrom() + " " + m.getBody());
+                log.debug(m.getFrom() + " " + m.getBody());
 
                 if (foo != 0) {
                     break;

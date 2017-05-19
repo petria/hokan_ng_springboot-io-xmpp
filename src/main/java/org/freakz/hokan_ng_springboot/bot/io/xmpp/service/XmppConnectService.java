@@ -138,27 +138,15 @@ public class XmppConnectService implements CommandLineRunner {
 
         log.debug("Starting session...");
         try {
-            // Create a connection to the igniterealtime.org XMPP server.
-//            String server = "chat.hipchat.com";
-//            int port = 5222;
-
-
-            //ConnectionConfiguration config = new ConnectionConfiguration("talk.google.com", 5222, "gmail.com");
             ConnectionConfiguration config = new ConnectionConfiguration(configuration.getXmppServer(), configuration.getXmppPort());
             connection = new XMPPConnection(config);
             log.debug("Connecting to : " + connection.getHost() + ":" + connection.getPort());
             // Connect to the server
             connection.connect();
-            // Most servers require you to login before performing other tasks.
-//            String login = "707396_4968751@chat.hipchat.com";
-//            String password = "poiASD098?!?";
-//            String username = "707396_4968738@chat.hipchat.com";
-//            String password = "iFdCEHnBpJ6cBc";
-
             connection.login(configuration.getXmppLogin(), configuration.getXmppPassword());
 
 
-            multiUserChat = new MultiUserChat(connection, "707396_robbottitesti@conf.hipchat.com");
+            multiUserChat = new MultiUserChat(connection, configuration.getXmppRoom());
             DiscussionHistory discussionHistory = new DiscussionHistory();
             discussionHistory.setMaxStanzas(0);
             discussionHistory.setMaxChars(0);
@@ -168,17 +156,23 @@ public class XmppConnectService implements CommandLineRunner {
             multiUserChat.join(username, null, discussionHistory, 10000L);
             PacketCollector packetCollector = null;
             packetCollector = connection.createPacketCollector(new PacketTypeFilter(Message.class));
-            int foo = 0;
+
             while (true) {
-                Message m = (Message) packetCollector.nextResult();
-                String message = m.getBody();
-                if (m == null || message == null) {
+                Message m = (Message) packetCollector.nextResult(100L);
+                if (Thread.currentThread().isInterrupted()) {
+                    break;
+                }
+                if (m == null) {
                     continue;
                 }
-                //(String botNick, String network, String channel, String sender, String login, String hostname, String message)
+                String message = m.getBody();
+                if (message == null) {
+                    continue;
+                }
                 String sender = m.getFrom();
                 log.debug("sender: {}", sender);
                 if (sender.endsWith(username)) {
+                    // don't handle own messages
                     continue;
                 }
                 IrcLog ircLog = this.ircLogService.addIrcLog(new Date(), sender, CHANNEL_NAME, message);
@@ -202,13 +196,7 @@ public class XmppConnectService implements CommandLineRunner {
 
 
                 engineCommunicator.sendToEngine(ircEvent, null);
-
                 log.debug(m.getFrom() + " " + m.getBody());
-
-                if (foo != 0) {
-                    break;
-                }
-
             }
 
             connection.disconnect();
@@ -220,8 +208,6 @@ public class XmppConnectService implements CommandLineRunner {
 
     @Override
     public void run(String... strings) throws Exception {
-//        Thread t = new Thread(this::connect);
-//        t.start();
         connect();
     }
 

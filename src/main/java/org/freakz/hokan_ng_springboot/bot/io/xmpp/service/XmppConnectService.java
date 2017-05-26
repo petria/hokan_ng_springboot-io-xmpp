@@ -134,7 +134,7 @@ public class XmppConnectService implements CommandLineRunner {
 
     public void connect() {
 
-        SmackConfiguration.setLocalSocks5ProxyEnabled(false);
+//        SmackConfiguration.setLocalSocks5ProxyEnabled(false);
 
         log.debug("Starting session...");
         try {
@@ -156,9 +156,16 @@ public class XmppConnectService implements CommandLineRunner {
             multiUserChat.join(username, null, discussionHistory, 10000L);
             PacketCollector packetCollector = null;
             packetCollector = connection.createPacketCollector(new PacketTypeFilter(Message.class));
-
+            String version = SmackConfiguration.getVersion();
+            SmackConfiguration
             while (true) {
-                Message m = (Message) packetCollector.nextResult(100L);
+//                Message m = (Message) packetCollector.nextResult(1000L);
+                Message m = null;
+                try {
+                    m = (Message) packetCollector.nextResult();
+                } catch (Exception e) {
+                    int foo = 0;
+                }
                 if (Thread.currentThread().isInterrupted()) {
                     break;
                 }
@@ -203,7 +210,7 @@ public class XmppConnectService implements CommandLineRunner {
         } catch (XMPPException e) {
             e.printStackTrace();
         }
-        System.out.println("Ended session...");
+        log.debug("Ended session...");
     }
 
     @Override

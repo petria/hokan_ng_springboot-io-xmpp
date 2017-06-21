@@ -1,5 +1,11 @@
 package org.freakz.hokan_ng_springboot.bot.io.xmpp.service;
 
+import ch.viascom.groundwork.foxhttp.exception.FoxHttpException;
+import ch.viascom.hipchat.api.HipChat;
+import ch.viascom.hipchat.api.api.ExtensionsApi;
+import ch.viascom.hipchat.api.models.Message;
+import ch.viascom.hipchat.api.request.models.MessageRequestBody;
+import ch.viascom.hipchat.api.request.models.ViewRoomHistory;
 import lombok.extern.slf4j.Slf4j;
 import org.freakz.hokan_ng_springboot.bot.common.events.EngineResponse;
 import org.freakz.hokan_ng_springboot.bot.common.events.IrcEvent;
@@ -19,20 +25,14 @@ import org.freakz.hokan_ng_springboot.bot.common.jpa.service.UserService;
 import org.freakz.hokan_ng_springboot.bot.common.util.StringStuff;
 import org.freakz.hokan_ng_springboot.bot.io.xmpp.config.XmppConfiguration;
 import org.freakz.hokan_ng_springboot.bot.io.xmpp.jms.EngineCommunicator;
-import org.jivesoftware.smack.Connection;
-import org.jivesoftware.smack.ConnectionConfiguration;
-import org.jivesoftware.smack.PacketCollector;
-import org.jivesoftware.smack.SmackConfiguration;
-import org.jivesoftware.smack.XMPPConnection;
-import org.jivesoftware.smack.XMPPException;
-import org.jivesoftware.smack.filter.PacketTypeFilter;
-import org.jivesoftware.smack.packet.Message;
-import org.jivesoftware.smackx.muc.DiscussionHistory;
-import org.jivesoftware.smackx.muc.MultiUserChat;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.Date;
 
 /**
@@ -45,34 +45,28 @@ public class XmppConnectService implements CommandLineRunner {
 
     private static final String NETWORK_NAME = "xmppNetwork";
     private static final String CHANNEL_NAME = "xmppChannel";
-
+    private static final String clientToken = "T6z2SAeREfTl4K1Lq8zUXh8RjPJuEDlS1JeGqMjI";
     @Autowired
     private EngineCommunicator engineCommunicator;
-
     @Autowired
     private ChannelService channelService;
-
     @Autowired
     private ChannelStatsService channelStatsService;
-
     @Autowired
     private IrcLogService ircLogService;
-
     @Autowired
     private NetworkService networkService;
-
     @Autowired
     private UserChannelService userChannelService;
-
     @Autowired
     private UserService userService;
 
+//    private Connection connection;
+
+    //    private MultiUserChat multiUserChat;
     @Autowired
     private XmppConfiguration configuration;
-
-    private Connection connection;
-
-    private MultiUserChat multiUserChat;
+    private LocalDateTime lastHandled = LocalDateTime.now();
 
     public Network getNetwork() {
         Network network = networkService.getNetwork(NETWORK_NAME);
@@ -131,57 +125,26 @@ public class XmppConnectService implements CommandLineRunner {
         return user;
     }
 
-
     public void connect() {
 
-//        SmackConfiguration.setLocalSocks5ProxyEnabled(false);
-
         log.debug("Starting session...");
+
         try {
-            ConnectionConfiguration config = new ConnectionConfiguration(configuration.getXmppServer(), configuration.getXmppPort());
-            connection = new XMPPConnection(config);
-            log.debug("Connecting to : " + connection.getHost() + ":" + connection.getPort());
-            // Connect to the server
-            connection.connect();
-            connection.login(configuration.getXmppLogin(), configuration.getXmppPassword());
 
 
-            multiUserChat = new MultiUserChat(connection, configuration.getXmppRoom());
-            DiscussionHistory discussionHistory = new DiscussionHistory();
-            discussionHistory.setMaxStanzas(0);
-            discussionHistory.setMaxChars(0);
-            discussionHistory.setSeconds(1);
-            discussionHistory.setSince(new Date());
-            String username = configuration.getXmppUsername();
-            multiUserChat.join(username, null, discussionHistory, 10000L);
-            PacketCollector packetCollector = null;
-            packetCollector = connection.createPacketCollector(new PacketTypeFilter(Message.class));
-            String version = SmackConfiguration.getVersion();
-            SmackConfiguration
             while (true) {
-//                Message m = (Message) packetCollector.nextResult(1000L);
-                Message m = null;
-                try {
-                    m = (Message) packetCollector.nextResult();
-                } catch (Exception e) {
-                    int foo = 0;
-                }
-                if (Thread.currentThread().isInterrupted()) {
-                    break;
-                }
-                if (m == null) {
+                log.debug("Polling messages...");
+                Message hipMessage = pollMessages();
+                if (hipMessage == null) {
+                    log.debug("Sleep ...");
+                    Thread.sleep(5000L);
                     continue;
                 }
-                String message = m.getBody();
-                if (message == null) {
-                    continue;
-                }
-                String sender = m.getFrom();
-                log.debug("sender: {}", sender);
-                if (sender.endsWith(username)) {
-                    // don't handle own messages
-                    continue;
-                }
+
+                log.debug("Handling message: {}", hipMessage);
+
+                String sender = hipMessage.getFrom().getName();
+                String message = hipMessage.getMessage();
                 IrcLog ircLog = this.ircLogService.addIrcLog(new Date(), sender, CHANNEL_NAME, message);
 
                 Network nw = getNetwork();
@@ -201,16 +164,35 @@ public class XmppConnectService implements CommandLineRunner {
                 userChannel.setLastMessageTime(new Date());
                 userChannelService.save(userChannel);
 
-
                 engineCommunicator.sendToEngine(ircEvent, null);
-                log.debug(m.getFrom() + " " + m.getBody());
+//                log.debug(m.getFrom() + " " + m.getBody());
             }
 
-            connection.disconnect();
-        } catch (XMPPException e) {
+//            connection.disconnect();
+        } catch (Exception e) {
             e.printStackTrace();
         }
         log.debug("Ended session...");
+    }
+
+    private Message pollMessages() throws FoxHttpException {
+        HipChat hipChat = new HipChat(clientToken);
+        ViewRoomHistory viewRoomHistory = new ViewRoomHistory(0, 100);
+        viewRoomHistory.setReverse(false);
+        ArrayList<Message> messages = hipChat.roomsApi().viewRoomHistory("3864731", viewRoomHistory).getItems();
+        if (messages.size() > 0) {
+            Message message = messages.get(0);
+            String str = message.getDate();
+            LocalDateTime dateTime = LocalDateTime.parse(str, DateTimeFormatter.ISO_OFFSET_DATE_TIME).plusHours(3);
+            if (dateTime.isAfter(lastHandled)) {
+                log.debug("New message: {}", message.getMessage());
+                lastHandled = dateTime;
+                return message;
+
+            }
+            int foo = 0;
+        }
+        return null;
     }
 
     @Override
@@ -219,8 +201,13 @@ public class XmppConnectService implements CommandLineRunner {
     }
 
     public void handleEngineResponse(EngineResponse response) {
-        Message m = new Message(multiUserChat.getRoom(), Message.Type.groupchat);
-        m.setBody(response.getResponseMessage());
-        connection.sendPacket(m);
+        HipChat hipChat = null;
+        try {
+            hipChat = new HipChat(clientToken);
+            hipChat.roomsApi().sendRoomMessage("3864731", new MessageRequestBody(response.getResponseMessage()));
+        } catch (FoxHttpException e) {
+            e.printStackTrace();
+
+        }
     }
 }

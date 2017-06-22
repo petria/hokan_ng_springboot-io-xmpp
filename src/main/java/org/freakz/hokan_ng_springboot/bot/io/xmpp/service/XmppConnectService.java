@@ -5,6 +5,8 @@ import org.freakz.hokan_ng_springboot.bot.common.events.EngineResponse;
 import org.freakz.hokan_ng_springboot.bot.common.events.IrcEvent;
 import org.freakz.hokan_ng_springboot.bot.common.events.IrcMessageEvent;
 import org.freakz.hokan_ng_springboot.bot.common.jpa.entity.Channel;
+import org.freakz.hokan_ng_springboot.bot.common.jpa.entity.ChannelStartupState;
+import org.freakz.hokan_ng_springboot.bot.common.jpa.entity.ChannelState;
 import org.freakz.hokan_ng_springboot.bot.common.jpa.entity.ChannelStats;
 import org.freakz.hokan_ng_springboot.bot.common.jpa.entity.IrcLog;
 import org.freakz.hokan_ng_springboot.bot.common.jpa.entity.Network;
@@ -26,11 +28,14 @@ import rocks.xmpp.addr.Jid;
 import rocks.xmpp.core.session.TcpConnectionConfiguration;
 import rocks.xmpp.core.session.XmppClient;
 import rocks.xmpp.core.stanza.model.Message;
+import rocks.xmpp.extensions.delay.model.DelayedDelivery;
 import rocks.xmpp.extensions.muc.ChatRoom;
 import rocks.xmpp.extensions.muc.ChatService;
 import rocks.xmpp.extensions.muc.MultiUserChatManager;
+import rocks.xmpp.extensions.muc.model.DiscussionHistory;
 import rocks.xmpp.util.concurrent.AsyncResult;
 
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.Date;
@@ -69,14 +74,14 @@ public class XmppConnectService implements CommandLineRunner {
     private XmppConfiguration configuration;
     private LocalDateTime lastHandled = LocalDateTime.now();
     private ChatRoom joined = null;
+    private boolean isFirst = true;
 
     public Network getNetwork() {
         Network network = networkService.getNetwork(NETWORK_NAME);
         if (network == null) {
             network = new Network(NETWORK_NAME);
-            network = networkService.save(network);
         }
-        return network;
+        return networkService.save(network);
     }
 
     public Channel getChannel(String channelName) {
@@ -86,7 +91,9 @@ public class XmppConnectService implements CommandLineRunner {
         if (channel == null) {
             channel = channelService.createChannel(getNetwork(), channelName);
         }
-        return channel;
+        channel.setChannelStartupState(ChannelStartupState.JOIN);
+        channel.setChannelState(ChannelState.JOINED);
+        return channelService.save(channel);
     }
 
     public Channel getChannel(IrcEvent ircEvent) {
@@ -152,14 +159,13 @@ public class XmppConnectService implements CommandLineRunner {
                 Object hipMessage = null;
                 if (hipMessage == null) {
                     log.debug("Sleep ...");
-                    Thread.sleep(5000L);
+                    Thread.sleep(15000L);
                     continue;
                 }
 
-//                log.debug(m.getFrom() + " " + m.getBody());
+
             }
 
-//            connection.disconnect();
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -191,13 +197,6 @@ public class XmppConnectService implements CommandLineRunner {
     }
 
     private void testRocks() {
-        String wttr = "Weather report: jyv, Jyv�skyl� Airport, Finland\n" +
-                "\n" +
-                "    \\  /       Partly cloudy\n" +
-                "  _ /\"\".-.  9-11 °C        \n" +
-                "    \\_( ).  ↘ 19 km/h      \n" +
-                "    /(___(__)  10 km          \n" +
-                "               0.0 mm         \n";
 
         try {
             TcpConnectionConfiguration tcpConfiguration = TcpConnectionConfiguration.builder()
@@ -218,17 +217,22 @@ public class XmppConnectService implements CommandLineRunner {
             List<ChatRoom> chatRooms = listAsyncResult.get();
             ChatRoom botRoom = getBotRoom(chatRooms);
             if (botRoom != null) {
-                botRoom.enter(configuration.getXmppUsername());
-                joined = botRoom;
+                botRoom.enter(configuration.getXmppUsername(), DiscussionHistory.forMaxMessages(1));
                 botRoom.addInboundMessageListener(e -> {
-                    Message message = e.getMessage();
-                    sendMessageToEngine("someone", message.getBody());
-//                    System.out.println(message.getFrom().getResource() + ": " + message.getBody());
+                    if (isFirst) {
+                        isFirst = false;
+                        log.debug("Skip first");
+                    } else {
+                        Message message = e.getMessage();
+                        log.debug("Message: {}", message.getBody());
+                        sendMessageToEngine("someone", message.getBody());
+                    }
+
+
+
                 });
-//                botRoom.sendMessage(wttr);
+                joined = botRoom;
             }
-            // 188553_bottest@conf.hipchat.com
-            int foo = 0;
 
         } catch (Exception e) {
             e.printStackTrace();
@@ -245,26 +249,6 @@ public class XmppConnectService implements CommandLineRunner {
         return null;
     }
 
-/*    private Message pollMessages() throws FoxHttpException {
-        HipChat hipChat = new HipChat(clientToken);
-        ViewRoomHistory viewRoomHistory = new ViewRoomHistory(0, 100);
-        viewRoomHistory.setReverse(false);
-        ArrayList<Message> messages = hipChat.roomsApi().viewRoomHistory("3864731", viewRoomHistory).getItems();
-        if (messages.size() > 0) {
-            Message message = messages.get(0);
-            String str = message.getDate();
-            LocalDateTime dateTime = LocalDateTime.parse(str, DateTimeFormatter.ISO_OFFSET_DATE_TIME).plusHours(3);
-            if (dateTime.isAfter(lastHandled)) {
-                log.debug("New message: {}", message.getMessage());
-                lastHandled = dateTime;
-                return message;
-
-            }
-            int foo = 0;
-        }
-        return null;
-    }*/
-
     @Override
     public void run(String... strings) throws Exception {
         connect();
@@ -274,14 +258,5 @@ public class XmppConnectService implements CommandLineRunner {
         if (joined != null) {
             joined.sendMessage(response.getResponseMessage());
         }
-        int foo = 0;
-/*        HipChat hipChat = null;
-        try {
-            hipChat = new HipChat(clientToken);
-            hipChat.roomsApi().sendRoomMessage("3864731", new MessageRequestBody(response.getResponseMessage()));
-        } catch (FoxHttpException e) {
-            e.printStackTrace();
-
-        } */
     }
 }

@@ -24,18 +24,15 @@ import org.freakz.hokan_ng_springboot.bot.io.xmpp.jms.EngineCommunicator;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Service;
-import rocks.xmpp.addr.Jid;
 import rocks.xmpp.core.session.TcpConnectionConfiguration;
 import rocks.xmpp.core.session.XmppClient;
 import rocks.xmpp.core.stanza.model.Message;
-import rocks.xmpp.extensions.delay.model.DelayedDelivery;
 import rocks.xmpp.extensions.muc.ChatRoom;
 import rocks.xmpp.extensions.muc.ChatService;
 import rocks.xmpp.extensions.muc.MultiUserChatManager;
 import rocks.xmpp.extensions.muc.model.DiscussionHistory;
 import rocks.xmpp.util.concurrent.AsyncResult;
 
-import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.Date;
@@ -145,7 +142,7 @@ public class XmppConnectService implements CommandLineRunner {
 
 
             while (true) {
-                log.debug("Polling messages...");
+//                log.debug("Polling messages...");
 /*                Message hipMessage = pollMessages();
                 if (hipMessage == null) {
                     log.debug("Sleep ...");
@@ -158,8 +155,8 @@ public class XmppConnectService implements CommandLineRunner {
 
                 Object hipMessage = null;
                 if (hipMessage == null) {
-                    log.debug("Sleep ...");
-                    Thread.sleep(15000L);
+                    //                  log.debug("Sleep ...");
+                    Thread.sleep(150000L);
                     continue;
                 }
 

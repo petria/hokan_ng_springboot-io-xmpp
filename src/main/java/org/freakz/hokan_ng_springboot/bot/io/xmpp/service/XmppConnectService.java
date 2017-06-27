@@ -33,7 +33,6 @@ import rocks.xmpp.extensions.muc.MultiUserChatManager;
 import rocks.xmpp.extensions.muc.model.DiscussionHistory;
 import rocks.xmpp.util.concurrent.AsyncResult;
 
-import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.Date;
 import java.util.List;
@@ -45,31 +44,33 @@ import java.util.List;
 @Slf4j
 public class XmppConnectService implements CommandLineRunner {
 
-
     private static final String NETWORK_NAME = "xmppNetwork";
+
     private static final String CHANNEL_NAME = "xmppChannel";
-    private static final String clientToken = "T6z2SAeREfTl4K1Lq8zUXh8RjPJuEDlS1JeGqMjI";
+
     @Autowired
     private EngineCommunicator engineCommunicator;
+
     @Autowired
     private ChannelService channelService;
+
     @Autowired
     private ChannelStatsService channelStatsService;
+
     @Autowired
     private IrcLogService ircLogService;
+
     @Autowired
     private NetworkService networkService;
+
     @Autowired
     private UserChannelService userChannelService;
+
     @Autowired
     private UserService userService;
 
-//    private Connection connection;
-
-    //    private MultiUserChat multiUserChat;
     @Autowired
     private XmppConfiguration configuration;
-    private LocalDateTime lastHandled = LocalDateTime.now();
     private ChatRoom joined = null;
     private boolean isFirst = true;
 
@@ -137,30 +138,10 @@ public class XmppConnectService implements CommandLineRunner {
 
         try {
 
-//            sendMessageToEngine("someone", "!wttr jyv");
             testRocks();
 
-
             while (true) {
-//                log.debug("Polling messages...");
-/*                Message hipMessage = pollMessages();
-                if (hipMessage == null) {
-                    log.debug("Sleep ...");
-                    Thread.sleep(5000L);
-                    continue;
-                }
-
-                log.debug("Handling message: {}", hipMessage);
-*/
-
-                Object hipMessage = null;
-                if (hipMessage == null) {
-                    //                  log.debug("Sleep ...");
                     Thread.sleep(150000L);
-                    continue;
-                }
-
-
             }
 
         } catch (Exception e) {
@@ -180,6 +161,9 @@ public class XmppConnectService implements CommandLineRunner {
 
         User user = getUser(ircEvent);
         Channel ch = getChannel(ircEvent);
+        ChannelStats channelStats = getChannelStats(ch);
+        channelStats.addToLinesReceived(1);
+        channelStatsService.save(channelStats);
 
         UserChannel userChannel = userChannelService.getUserChannel(user, ch);
         if (userChannel == null) {
@@ -229,6 +213,12 @@ public class XmppConnectService implements CommandLineRunner {
 
                 });
                 joined = botRoom;
+
+                Network nw = getNetwork();
+                nw.addToConnectCount(1);
+                nw.addToChannelsJoined(1);
+                this.networkService.save(nw);
+
             }
 
         } catch (Exception e) {
@@ -253,6 +243,15 @@ public class XmppConnectService implements CommandLineRunner {
 
     public void handleEngineResponse(EngineResponse response) {
         if (joined != null) {
+            Network network = getNetwork();
+            network.addToLinesSent(1);
+            networkService.save(network);
+
+            ChannelStats channelStats = getChannelStats(getChannel(response.getIrcMessageEvent()));
+            channelStats.setLastActive(new Date());
+            channelStats.addToLinesSent(1);
+            channelStatsService.save(channelStats);
+
             joined.sendMessage(response.getResponseMessage());
         }
     }

@@ -190,8 +190,16 @@ public class XmppConnectService implements CommandLineRunner {
 
             MultiUserChatManager multiUserChatManager = xmppClient.getManager(MultiUserChatManager.class);
             Collection<ChatService> chatServices = multiUserChatManager.discoverChatServices().getResult();
+            xmppClient.sendMessage()
+            xmppClient.addInboundMessageListener(e -> {
+                Message message = e.getMessage();
+                if (message.getBody() != null && message.getType() == Message.Type.CHAT && message.getBody().length() > 0) {
+                    log.debug("message: {} -> {} ", message.getFrom().toString(), message.getBody());
 
-
+                    sendMessageToEngine(message.getFrom().toString(), message.getBody());
+                }
+                // Handle message.
+            });
             ChatService chatService = chatServices.iterator().next();
 
             AsyncResult<List<ChatRoom>> listAsyncResult = chatService.discoverRooms();
@@ -243,6 +251,9 @@ public class XmppConnectService implements CommandLineRunner {
 
     public void handleEngineResponse(EngineResponse response) {
         if (joined != null) {
+            String sender = response.getIrcMessageEvent().getSender();
+
+
             Network network = getNetwork();
             network.addToLinesSent(1);
             networkService.save(network);
@@ -252,7 +263,7 @@ public class XmppConnectService implements CommandLineRunner {
             channelStats.addToLinesSent(1);
             channelStatsService.save(channelStats);
 
-            joined.sendMessage(response.getResponseMessage());
+//            joined.sendMessage(response.getResponseMessage());
         }
     }
 }

@@ -135,22 +135,10 @@ public class XmppConnectService implements CommandLineRunner {
 
         log.debug("Connecting to: {}", configuration.getXmppServer());
 
-/*        try {
-
-            testRocks();
-
-            while (true) {
-                    Thread.sleep(150000L);
-            }
-
-        } catch (Exception e) {
-            e.printStackTrace();
-        }*/
-
         try {
             TcpConnectionConfiguration tcpConfiguration = TcpConnectionConfiguration.builder()
                     .hostname(configuration.getXmppServer())
-                    .port(5222)
+                    .port(configuration.getXmppPort())
                     .build();
             xmppClient = XmppClient.create(configuration.getXmppServer(), tcpConfiguration);
             xmppClient.connect();
@@ -164,7 +152,7 @@ public class XmppConnectService implements CommandLineRunner {
                     log.debug("message: {} -> {} ", message.getFrom().toString(), message.getBody());
                     sendMessageToEngine(message);
                 }
-                // Handle message.
+
             });
             ChatService chatService = chatServices.iterator().next();
 
@@ -176,13 +164,12 @@ public class XmppConnectService implements CommandLineRunner {
                 botRoom.addInboundMessageListener(e -> {
                     if (isFirst) {
                         isFirst = false;
-                        log.debug("Skip first");
+                        log.debug("Skip first, history message");
                     } else {
                         Message message = e.getMessage();
                         log.debug("Message: {}", message.getBody());
                         sendMessageToEngine(message);
                     }
-
 
                 });
 
@@ -198,7 +185,6 @@ public class XmppConnectService implements CommandLineRunner {
         }
 
     }
-
 
     private void sendMessageToEngine(Message xmppMessage) {
 
@@ -242,11 +228,6 @@ public class XmppConnectService implements CommandLineRunner {
         return null;
     }
 
-    @Override
-    public void run(String... strings) throws Exception {
-        connect();
-    }
-
     public void handleEngineResponse(EngineResponse response) {
         String sender = response.getIrcMessageEvent().getSender();
         Jid jid = jidMap.get(sender);
@@ -261,6 +242,11 @@ public class XmppConnectService implements CommandLineRunner {
         channelStats.addToLinesSent(1);
         channelStatsService.save(channelStats);
 
+    }
+
+    @Override
+    public void run(String... strings) throws Exception {
+        connect();
     }
 
 }

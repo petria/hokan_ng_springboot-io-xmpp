@@ -24,6 +24,7 @@ import org.freakz.hokan_ng_springboot.bot.io.xmpp.jms.EngineCommunicator;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Service;
+import rocks.xmpp.addr.Jid;
 import rocks.xmpp.core.session.TcpConnectionConfiguration;
 import rocks.xmpp.core.session.XmppClient;
 import rocks.xmpp.core.stanza.model.Message;
@@ -35,7 +36,9 @@ import rocks.xmpp.util.concurrent.AsyncResult;
 
 import java.util.Collection;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * @author Petri Airio
@@ -150,7 +153,15 @@ public class XmppConnectService implements CommandLineRunner {
         log.debug("Ended session...");
     }
 
-    private void sendMessageToEngine(String sender, String message) {
+    private Map<String, Jid> jidMap = new HashMap<>();
+
+    private void sendMessageToEngine(Message xmppMessage) {
+
+        String sender = xmppMessage.getFrom().toString();
+        jidMap.put(sender, xmppMessage.getFrom());
+
+        String message = xmppMessage.getBody();
+
         IrcLog ircLog = this.ircLogService.addIrcLog(new Date(), sender, CHANNEL_NAME, message);
 
         Network nw = getNetwork();
@@ -177,6 +188,8 @@ public class XmppConnectService implements CommandLineRunner {
 
     }
 
+    private XmppClient xmppClient;
+
     private void testRocks() {
 
         try {
@@ -184,19 +197,17 @@ public class XmppConnectService implements CommandLineRunner {
                     .hostname(configuration.getXmppServer())
                     .port(5222)
                     .build();
-            XmppClient xmppClient = XmppClient.create(configuration.getXmppServer(), tcpConfiguration);
+            xmppClient = XmppClient.create(configuration.getXmppServer(), tcpConfiguration);
             xmppClient.connect();
             xmppClient.login(configuration.getXmppLogin(), configuration.getXmppPassword());
 
             MultiUserChatManager multiUserChatManager = xmppClient.getManager(MultiUserChatManager.class);
             Collection<ChatService> chatServices = multiUserChatManager.discoverChatServices().getResult();
-            xmppClient.sendMessage()
             xmppClient.addInboundMessageListener(e -> {
                 Message message = e.getMessage();
                 if (message.getBody() != null && message.getType() == Message.Type.CHAT && message.getBody().length() > 0) {
                     log.debug("message: {} -> {} ", message.getFrom().toString(), message.getBody());
-
-                    sendMessageToEngine(message.getFrom().toString(), message.getBody());
+                    sendMessageToEngine(message);
                 }
                 // Handle message.
             });
@@ -214,7 +225,7 @@ public class XmppConnectService implements CommandLineRunner {
                     } else {
                         Message message = e.getMessage();
                         log.debug("Message: {}", message.getBody());
-                        sendMessageToEngine("someone", message.getBody());
+                        sendMessageToEngine(message);
                     }
 
 
@@ -250,20 +261,18 @@ public class XmppConnectService implements CommandLineRunner {
     }
 
     public void handleEngineResponse(EngineResponse response) {
-        if (joined != null) {
-            String sender = response.getIrcMessageEvent().getSender();
+        String sender = response.getIrcMessageEvent().getSender();
+        Jid jid = jidMap.get(sender);
+        Message message = new Message(jid, Message.Type.CHAT, response.getResponseMessage());
+        xmppClient.sendMessage(message);
+        Network network = getNetwork();
+        network.addToLinesSent(1);
+        networkService.save(network);
 
+        ChannelStats channelStats = getChannelStats(getChannel(response.getIrcMessageEvent()));
+        channelStats.setLastActive(new Date());
+        channelStats.addToLinesSent(1);
+        channelStatsService.save(channelStats);
 
-            Network network = getNetwork();
-            network.addToLinesSent(1);
-            networkService.save(network);
-
-            ChannelStats channelStats = getChannelStats(getChannel(response.getIrcMessageEvent()));
-            channelStats.setLastActive(new Date());
-            channelStats.addToLinesSent(1);
-            channelStatsService.save(channelStats);
-
-//            joined.sendMessage(response.getResponseMessage());
-        }
     }
 }

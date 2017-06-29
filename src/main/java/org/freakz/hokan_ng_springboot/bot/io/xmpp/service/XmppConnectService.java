@@ -74,10 +74,14 @@ public class XmppConnectService implements CommandLineRunner {
 
     @Autowired
     private XmppConfiguration configuration;
-    private ChatRoom joined = null;
+
+    private Map<String, Jid> jidMap = new HashMap<>();
+
+    private XmppClient xmppClient;
+
     private boolean isFirst = true;
 
-    public Network getNetwork() {
+    private Network getNetwork() {
         Network network = networkService.getNetwork(NETWORK_NAME);
         if (network == null) {
             network = new Network(NETWORK_NAME);
@@ -85,7 +89,7 @@ public class XmppConnectService implements CommandLineRunner {
         return networkService.save(network);
     }
 
-    public Channel getChannel(String channelName) {
+    private Channel getChannel(String channelName) {
         Channel channel;
         channel = channelService.findByNetworkAndChannelName(getNetwork(), channelName);
 
@@ -97,11 +101,11 @@ public class XmppConnectService implements CommandLineRunner {
         return channelService.save(channel);
     }
 
-    public Channel getChannel(IrcEvent ircEvent) {
+    private Channel getChannel(IrcEvent ircEvent) {
         return getChannel(ircEvent.getChannel());
     }
 
-    public ChannelStats getChannelStats(Channel channel) {
+    private ChannelStats getChannelStats(Channel channel) {
         ChannelStats channelStats = channelStatsService.findFirstByChannel(channel);
         if (channelStats == null) {
             channelStats = new ChannelStats();
@@ -110,15 +114,7 @@ public class XmppConnectService implements CommandLineRunner {
         return channelStats;
     }
 
-    public UserChannel getUserChannel(User user, Channel channel, IrcLog ircLog) {
-        UserChannel userChannel = userChannelService.getUserChannel(user, channel);
-        if (userChannel == null) {
-            userChannel = userChannelService.createUserChannel(user, channel, ircLog);
-        }
-        return userChannel;
-    }
-
-    public User getUser(IrcEvent ircEvent) {
+    private User getUser(IrcEvent ircEvent) {
         User user;
         User maskUser = this.userService.getUserByMask(ircEvent.getMask());
         if (maskUser != null) {
@@ -135,11 +131,11 @@ public class XmppConnectService implements CommandLineRunner {
         return user;
     }
 
-    public void connect() {
+    private void connect() {
 
-        log.debug("Starting session...");
+        log.debug("Connecting to: {}", configuration.getXmppServer());
 
-        try {
+/*        try {
 
             testRocks();
 
@@ -149,48 +145,7 @@ public class XmppConnectService implements CommandLineRunner {
 
         } catch (Exception e) {
             e.printStackTrace();
-        }
-        log.debug("Ended session...");
-    }
-
-    private Map<String, Jid> jidMap = new HashMap<>();
-
-    private void sendMessageToEngine(Message xmppMessage) {
-
-        String sender = xmppMessage.getFrom().toString();
-        jidMap.put(sender, xmppMessage.getFrom());
-
-        String message = xmppMessage.getBody();
-
-        IrcLog ircLog = this.ircLogService.addIrcLog(new Date(), sender, CHANNEL_NAME, message);
-
-        Network nw = getNetwork();
-        nw.addToLinesReceived(1);
-        this.networkService.save(nw);
-
-        IrcMessageEvent ircEvent = new IrcMessageEvent("botName", NETWORK_NAME, CHANNEL_NAME, sender, "xmppLogin", "xmppHost", message);
-
-        User user = getUser(ircEvent);
-        Channel ch = getChannel(ircEvent);
-        ChannelStats channelStats = getChannelStats(ch);
-        channelStats.addToLinesReceived(1);
-        channelStatsService.save(channelStats);
-
-        UserChannel userChannel = userChannelService.getUserChannel(user, ch);
-        if (userChannel == null) {
-            userChannel = new UserChannel(user, ch);
-        }
-        userChannel.setLastIrcLogID(ircLog.getId() + "");
-        userChannel.setLastMessageTime(new Date());
-        userChannelService.save(userChannel);
-
-        engineCommunicator.sendToEngine(ircEvent, null);
-
-    }
-
-    private XmppClient xmppClient;
-
-    private void testRocks() {
+        }*/
 
         try {
             TcpConnectionConfiguration tcpConfiguration = TcpConnectionConfiguration.builder()
@@ -229,9 +184,7 @@ public class XmppConnectService implements CommandLineRunner {
                     }
 
 
-
                 });
-                joined = botRoom;
 
                 Network nw = getNetwork();
                 nw.addToConnectCount(1);
@@ -243,6 +196,40 @@ public class XmppConnectService implements CommandLineRunner {
         } catch (Exception e) {
             e.printStackTrace();
         }
+
+    }
+
+
+    private void sendMessageToEngine(Message xmppMessage) {
+
+        String sender = xmppMessage.getFrom().toString();
+        jidMap.put(sender, xmppMessage.getFrom());
+
+        String message = xmppMessage.getBody();
+
+        IrcLog ircLog = this.ircLogService.addIrcLog(new Date(), sender, CHANNEL_NAME, message);
+
+        Network nw = getNetwork();
+        nw.addToLinesReceived(1);
+        this.networkService.save(nw);
+
+        IrcMessageEvent ircEvent = new IrcMessageEvent("botName", NETWORK_NAME, CHANNEL_NAME, sender, "xmppLogin", "xmppHost", message);
+
+        User user = getUser(ircEvent);
+        Channel ch = getChannel(ircEvent);
+        ChannelStats channelStats = getChannelStats(ch);
+        channelStats.addToLinesReceived(1);
+        channelStatsService.save(channelStats);
+
+        UserChannel userChannel = userChannelService.getUserChannel(user, ch);
+        if (userChannel == null) {
+            userChannel = new UserChannel(user, ch);
+        }
+        userChannel.setLastIrcLogID(ircLog.getId() + "");
+        userChannel.setLastMessageTime(new Date());
+        userChannelService.save(userChannel);
+
+        engineCommunicator.sendToEngine(ircEvent, null);
 
     }
 
@@ -275,4 +262,5 @@ public class XmppConnectService implements CommandLineRunner {
         channelStatsService.save(channelStats);
 
     }
+
 }

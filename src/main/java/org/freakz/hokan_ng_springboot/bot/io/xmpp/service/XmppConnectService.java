@@ -180,6 +180,7 @@ public class XmppConnectService implements CommandLineRunner {
 
             }
 
+
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -221,10 +222,13 @@ public class XmppConnectService implements CommandLineRunner {
 
     private ChatRoom getBotRoom(List<ChatRoom> chatRooms) {
         for (ChatRoom room : chatRooms) {
-            if (room.getName().equals(configuration.getXmppRoom())) {
+            log.debug("room: {}", room.getName());
+            if (room.getName().equalsIgnoreCase(configuration.getXmppRoom())) {
                 return room;
             }
         }
+        log.error("No room to bind: {}", configuration.getXmppRoom());
+
         return null;
     }
 

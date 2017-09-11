@@ -75,7 +75,7 @@ public class XmppConnectService implements CommandLineRunner {
     @Autowired
     private XmppConfiguration configuration;
 
-    private Map<String, Jid> jidMap = new HashMap<>();
+    private Map<String, TypeSenderKey> jidMap = new HashMap<>();
 
     private XmppClient xmppClient;
 
@@ -187,10 +187,24 @@ public class XmppConnectService implements CommandLineRunner {
 
     }
 
+    static class TypeSenderKey {
+        public TypeSenderKey(Message.Type type, String sender, Jid from) {
+            this.type = type;
+            this.sender = sender;
+            this.from = from;
+        }
+
+        public Message.Type type;
+        public String sender;
+        public Jid from;
+    }
+
     private void sendMessageToEngine(Message xmppMessage) {
 
         String sender = xmppMessage.getFrom().toString();
-        jidMap.put(sender, xmppMessage.getFrom());
+        final Message.Type type = xmppMessage.getType();
+        TypeSenderKey key = new TypeSenderKey(type, sender, xmppMessage.getFrom());
+        jidMap.put(sender, key);
 
         String message = xmppMessage.getBody();
 
@@ -234,9 +248,11 @@ public class XmppConnectService implements CommandLineRunner {
 
     public void handleEngineResponse(EngineResponse response) {
         String sender = response.getIrcMessageEvent().getSender();
-        Jid jid = jidMap.get(sender);
-        Message message = new Message(jid, Message.Type.CHAT, response.getResponseMessage());
+        final TypeSenderKey typeSenderKey = jidMap.get(sender);
+        Message message = new Message(typeSenderKey.from, typeSenderKey.type, response.getResponseMessage());
         xmppClient.sendMessage(message);
+        jidMap.remove(sender);
+
         Network network = getNetwork();
         network.addToLinesSent(1);
         networkService.save(network);

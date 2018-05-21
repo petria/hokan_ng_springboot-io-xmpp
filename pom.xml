@@ -11,7 +11,7 @@
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
-        <version>1.5.10.RELEASE</version>
+        <version>1.5.13.RELEASE</version>
         <relativePath/>
     </parent>
 
@@ -44,16 +44,10 @@
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <maven.compiler.source>1.8</maven.compiler.source>
-        <maven.compiler.target>1.8</maven.compiler.target>
-        <java.version>1.8</java.version>
-
         <start-class>org.freakz.hokan_ng_springboot.bot.io.xmpp.HokanNgSpringBootIoXMPP</start-class>
-
         <java.version>1.8</java.version>
         <jsoup.version>1.9.2</jsoup.version>
         <logback.version>1.1.9</logback.version>
-        <lombok.version>1.16.12</lombok.version>
         <smack.version>4.2.0</smack.version>
     </properties>
 
@@ -65,6 +59,7 @@
             <artifactId>xmpp-core-client</artifactId>
             <version>0.8.0-SNAPSHOT</version>
         </dependency>
+
         <dependency>
             <groupId>rocks.xmpp</groupId>
             <artifactId>xmpp-extensions-client</artifactId>
@@ -92,12 +87,6 @@
         <dependency>
             <groupId>ch.qos.logback</groupId>
             <artifactId>logback-classic</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>org.projectlombok</groupId>
-            <artifactId>lombok</artifactId>
-            <scope>provided</scope>
         </dependency>
 
         <dependency>
@@ -132,12 +121,19 @@
         </dependency>
 
     </dependencies>
+
     <build>
         <plugins>
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
                 <configuration>
+                    <source>10</source>
+                    <target>10</target>
                     <executable>true</executable>
                 </configuration>
             </plugin>

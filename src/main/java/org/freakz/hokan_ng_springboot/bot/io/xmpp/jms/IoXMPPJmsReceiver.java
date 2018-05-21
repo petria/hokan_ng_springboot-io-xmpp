@@ -1,6 +1,5 @@
 package org.freakz.hokan_ng_springboot.bot.io.xmpp.jms;
 
-import lombok.extern.slf4j.Slf4j;
 import org.freakz.hokan_ng_springboot.bot.common.enums.HokanModule;
 import org.freakz.hokan_ng_springboot.bot.common.events.EngineResponse;
 import org.freakz.hokan_ng_springboot.bot.common.jms.JmsEnvelope;
@@ -14,7 +13,6 @@ import org.springframework.stereotype.Component;
  * -
  */
 @Component
-@Slf4j
 public class IoXMPPJmsReceiver extends SpringJmsReceiver {
 
 //    private final ConnectionManagerService connectionManagerService;

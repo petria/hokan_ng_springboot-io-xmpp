@@ -1,6 +1,5 @@
 package org.freakz.hokan_ng_springboot.bot.io.xmpp.jms;
 
-import lombok.extern.slf4j.Slf4j;
 import org.freakz.hokan_ng_springboot.bot.common.enums.HokanModule;
 import org.freakz.hokan_ng_springboot.bot.common.events.IrcMessageEvent;
 import org.freakz.hokan_ng_springboot.bot.common.events.ServiceRequest;
@@ -11,6 +10,8 @@ import org.freakz.hokan_ng_springboot.bot.common.jpa.entity.UserChannel;
 import org.freakz.hokan_ng_springboot.bot.common.jpa.service.AliasService;
 import org.freakz.hokan_ng_springboot.bot.common.util.CommandArgs;
 import org.freakz.hokan_ng_springboot.bot.common.util.StringStuff;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -21,8 +22,9 @@ import java.util.List;
  * -
  */
 @Service
-@Slf4j
 public class CommunicatorImpl implements EngineCommunicator, ServiceCommunicator {
+
+    private static final Logger log = LoggerFactory.getLogger(CommunicatorImpl.class);
 
     private final AliasService aliasService;
 
